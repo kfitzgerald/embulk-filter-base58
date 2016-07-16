@@ -2,7 +2,6 @@
 /pkg/
 /tmp/
 *.gemspec
-gradle/
 .gradle/
 /classpath/
 build/
