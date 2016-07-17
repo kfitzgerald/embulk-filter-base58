@@ -1,5 +1,7 @@
 # Base58 filter plugin for Embulk
 
+[![Build Status](https://travis-ci.org/kfitzgerald/embulk-filter-base58.svg?branch=master)](https://travis-ci.org/kfitzgerald/embulk-filter-base58)
+
 Embulk filter plugin to convert hex to base58 and vice versa.
 
 ## Overview
