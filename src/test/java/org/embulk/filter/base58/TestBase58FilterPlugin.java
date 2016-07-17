@@ -1,28 +1,17 @@
 package org.embulk.filter.base58;
 
-import com.google.common.collect.Lists;
-
-import org.embulk.EmbulkEmbed;
 import org.embulk.EmbulkTestRuntime;
-//import org.embulk.config.ConfigException;
 import org.embulk.filter.base58.Base58FilterPlugin.PluginTask;
 import org.embulk.config.ConfigLoader;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
 import org.embulk.spi.Exec;
-import org.embulk.spi.FilterPlugin;
 import org.embulk.spi.Schema;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.embulk.spi.type.Types.BOOLEAN;
-//import static org.embulk.spi.type.Types.DOUBLE;
-//import static org.embulk.spi.type.Types.JSON;
-//import static org.embulk.spi.type.Types.LONG;
 import static org.embulk.spi.type.Types.STRING;
-//import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 
 public class TestBase58FilterPlugin
@@ -36,11 +25,6 @@ public class TestBase58FilterPlugin
     public void createResource()
     {
         plugin = new Base58FilterPlugin();
-    }
-
-    private Schema schema(Column... columns)
-    {
-        return new Schema(Lists.newArrayList(columns));
     }
 
     private ConfigSource configFromYamlString(String... lines)

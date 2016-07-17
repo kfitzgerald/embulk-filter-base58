@@ -1,14 +1,9 @@
 package org.embulk.filter.base58;
 
-import com.google.common.collect.Lists;
-
-import org.embulk.EmbulkEmbed;
 import org.embulk.EmbulkTestRuntime;
-//import org.embulk.config.ConfigException;
 import org.embulk.filter.base58.Base58FilterPlugin.PluginTask;
 import org.embulk.config.ConfigLoader;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.TaskSource;
 import org.embulk.spi.*;
 import org.embulk.spi.TestPageBuilderReader.MockPageOutput;
 import org.embulk.spi.time.Timestamp;
@@ -90,7 +85,6 @@ public class TestBase58FilterImpl {
                 .build();
 
         List<Object[]> records = filter(task, inputSchema,
-//                Timestamp.ofEpochSecond(0), "string", new Boolean(true), new Long(0), new Double(0.5), ValueFactory.newString("json"), "remove_me",
                 "54f5f8b37c158c2f12ee1c64");
 
         assertEquals(1, records.size());
@@ -99,12 +93,7 @@ public class TestBase58FilterImpl {
         {
             record = records.get(0);
             assertEquals(1, record.length);
-//            assertEquals(Timestamp.ofEpochSecond(0), record[0]);
             assertEquals("2bzSwY8SCsogbNxZZ", record[0]);
-//            assertEquals(new Boolean(true), record[2]);
-//            assertEquals(new Long(0), record[3]);
-//            assertEquals(new Double(0.5), record[4]);
-//            assertEquals(ValueFactory.newString("json"), record[5]);
         }
     }
 
