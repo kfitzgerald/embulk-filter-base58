@@ -2,6 +2,8 @@ plugins {
     id "com.jfrog.bintray" version "1.1"
     id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
+    id "jacoco"
+    id "com.github.kt3k.coveralls" version "2.4.0"
 }
 import com.github.jrubygradle.JRubyExec
 repositories {
@@ -15,10 +17,19 @@ configurations {
 version = "0.1.0"
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.8.8"
-    provided "org.embulk:embulk-core:0.8.8"
+    compile  "org.embulk:embulk-core:0.8.+"
+    provided "org.embulk:embulk-core:0.8.+"
     // compile "YOUR_JAR_DEPENDENCY_GROUP:YOUR_JAR_DEPENDENCY_MODULE:YOUR_JAR_DEPENDENCY_VERSION"
     testCompile "junit:junit:4.+"
+    testCompile "org.embulk:embulk-core:0.8.+:tests"
+    testCompile "org.embulk:embulk-standards:0.8.+"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

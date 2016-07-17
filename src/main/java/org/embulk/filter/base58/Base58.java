@@ -2,27 +2,27 @@ package org.embulk.filter.base58;
 
 import java.math.BigInteger;
 
-public class Base58
+final class Base58
 {
     private Base58()
     {
     }
 
-    private static final String base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // Base-58 char library
+    private static final String BASE_58_CHARS = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // Base-58 char library
+    private static final BigInteger ZERO = new BigInteger("0");
+    private static final BigInteger FIFTY_EIGHT = new BigInteger("58");
 
     public static String encode(String hex)
     {
         String originalHex = hex;
 
         BigInteger numeric = new BigInteger(hex, 16);
-        BigInteger zero = new BigInteger("0");
-        BigInteger fifty58 = new BigInteger("58");
         String output = "";
 
-        while (numeric.compareTo(zero) == 1) {
-            BigInteger remainder = numeric.mod(fifty58);
-            numeric = numeric.divide(fifty58);
-            output = base58Chars.charAt(Integer.parseInt(remainder.toString())) + output;
+        while (numeric.compareTo(ZERO) == 1) {
+            BigInteger remainder = numeric.mod(FIFTY_EIGHT);
+            numeric = numeric.divide(FIFTY_EIGHT);
+            output = BASE_58_CHARS.charAt(Integer.parseInt(remainder.toString())) + output;
         }
 
         //leading zeros
@@ -39,15 +39,14 @@ public class Base58
 
         // Ignore bogus base58 strings
         if (base58Value.matches("[^1-9A-HJ-NP-Za-km-z]")) {
-            return "";
+            return null;
         }
 
         BigInteger output = new BigInteger("0");
-        BigInteger fifty58 = new BigInteger("58");
 
         for (int i = 0; i < base58Value.length(); i++) {
-            int current = base58Chars.indexOf(base58Value.charAt(i));
-            output = output.multiply(fifty58).add(new BigInteger(current + ""));
+            int current = BASE_58_CHARS.indexOf(base58Value.charAt(i));
+            output = output.multiply(FIFTY_EIGHT).add(new BigInteger(current + ""));
         }
 
         String hex = output.toString(16);
@@ -71,6 +70,6 @@ public class Base58
 
     public static String decodeWithPrefix(String baseValue, String prefix)
     {
-        return decode(baseValue.substring(prefix.length()));
+        return decode(baseValue.replace(prefix, ""));
     }
 }
