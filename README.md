@@ -1,6 +1,6 @@
 # Base58 filter plugin for Embulk
 
-[![Build Status](https://travis-ci.org/kfitzgerald/embulk-filter-base58.svg?branch=master)](https://travis-ci.org/kfitzgerald/embulk-filter-base58) ![Coverage Status](https://coveralls.io/repos/github/kfitzgerald/embulk-filter-base58/badge.svg?branch=master)](https://coveralls.io/github/kfitzgerald/embulk-filter-base58?branch=master)
+[![Build Status](https://travis-ci.org/kfitzgerald/embulk-filter-base58.svg?branch=master)](https://travis-ci.org/kfitzgerald/embulk-filter-base58) [![Coverage Status](https://coveralls.io/repos/github/kfitzgerald/embulk-filter-base58/badge.svg?branch=master)](https://coveralls.io/github/kfitzgerald/embulk-filter-base58?branch=master)
 
 Embulk filter plugin to convert hex to base58 and vice versa.
 
