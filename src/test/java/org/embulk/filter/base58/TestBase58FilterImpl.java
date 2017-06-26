@@ -56,7 +56,7 @@ public class TestBase58FilterImpl {
         Schema outputSchema = plugin.buildOutputSchema(task, inputSchema);
         PageBuilder pageBuilder = new PageBuilder(runtime.getBufferAllocator(), outputSchema, output);
         PageReader pageReader = new PageReader(inputSchema);
-        final Map<String, Base58FilterPlugin.Base58Column> base58ColumnMap = Base58FilterPlugin.convertBase58ColumnListToMap(task.getColumns());
+        final Map<String, List<Base58FilterPlugin.Base58Column>> base58ColumnMap = Base58FilterPlugin.convertBase58ColumnListToMap(task.getColumns());
         final Map<String, Column> outputColumnMap = Base58FilterPlugin.convertColumnListToMap(outputSchema.getColumns());
 
         List<Page> pages = PageTestUtils.buildPage(runtime.getBufferAllocator(), inputSchema, objects);
@@ -248,6 +248,33 @@ public class TestBase58FilterImpl {
     }
 
     @Test
+    public void basicEncodingWithPrefixAndNewNameWithMultipleDestinations()
+    {
+        PluginTask task = taskFromYamlString(
+                "type: base58",
+                "columns:",
+                "  - {name: _id, prefix: obj_, new_name: public_id}",
+                "  - {name: _id, prefix: old_, new_name: old_public_id}");
+        Schema inputSchema = Schema.builder()
+                .add("_id", STRING)
+                .build();
+
+        List<Object[]> records = filter(task, inputSchema,
+                "00f5f8b37c158c2f12ee1c64");
+
+        assertEquals(1, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(3, record.length);
+            assertEquals("00f5f8b37c158c2f12ee1c64", record[0]);
+            assertEquals("obj_123zhNEUWPr5ogRQP", record[1]);
+            assertEquals("old_123zhNEUWPr5ogRQP", record[2]);
+        }
+    }
+
+    @Test
     public void basicDecodingWithPrefixAndNewName()
     {
         PluginTask task = taskFromYamlString(
@@ -269,6 +296,33 @@ public class TestBase58FilterImpl {
             assertEquals(2, record.length);
             assertEquals("obj_123zhNEUWPr5ogRQP", record[0]);
             assertEquals("00f5f8b37c158c2f12ee1c64", record[1]);
+        }
+    }
+
+    @Test
+    public void basicDecodingWithPrefixAndNewNameWithMultipleDestinations()
+    {
+        PluginTask task = taskFromYamlString(
+                "type: base58",
+                "columns:",
+                "  - {name: public_id, encode: false, prefix: obj_, new_name: _id}",
+                "  - {name: public_id, encode: false, prefix: obj_, new_name: old_id}");
+        Schema inputSchema = Schema.builder()
+                .add("public_id", STRING)
+                .build();
+
+        List<Object[]> records = filter(task, inputSchema,
+                "obj_123zhNEUWPr5ogRQP");
+
+        assertEquals(1, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(3, record.length);
+            assertEquals("obj_123zhNEUWPr5ogRQP", record[0]);
+            assertEquals("00f5f8b37c158c2f12ee1c64", record[1]);
+            assertEquals("00f5f8b37c158c2f12ee1c64", record[2]);
         }
     }
 
