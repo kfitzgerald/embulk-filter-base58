@@ -57,7 +57,7 @@ public class TestBase58FilterImpl {
         PageBuilder pageBuilder = new PageBuilder(runtime.getBufferAllocator(), outputSchema, output);
         PageReader pageReader = new PageReader(inputSchema);
         final Map<String, List<Base58FilterPlugin.Base58Column>> base58ColumnMap = Base58FilterPlugin.convertBase58ColumnListToMap(task.getColumns());
-        final Map<String, Column> outputColumnMap = Base58FilterPlugin.convertColumnListToMap(outputSchema.getColumns());
+        final Map<String, Column> outputColumnMap = Base58FilterPlugin.convertColumnListToMap(outputSchema.getColumns(), null);
 
         List<Page> pages = PageTestUtils.buildPage(runtime.getBufferAllocator(), inputSchema, objects);
         for (Page page : pages) {
@@ -141,7 +141,14 @@ public class TestBase58FilterImpl {
                 .build();
 
         List<Object[]> records = filter(task, inputSchema,
-                "54f5f8b37c158c2f12ee1c64", Timestamp.ofEpochSecond(0), null, new Boolean(true), new Long(0), new Double(0.5), ValueFactory.newString("json"));
+                "54f5f8b37c158c2f12ee1c64",
+                Timestamp.ofEpochSecond(0),
+                null,
+                new Boolean(true),
+                new Long(0),
+                new Double(0.5),
+                ValueFactory.newString("json")
+        );
 
         assertEquals(1, records.size());
 

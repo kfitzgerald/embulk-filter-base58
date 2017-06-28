@@ -88,7 +88,7 @@ public class Base58FilterPlugin implements FilterPlugin {
 
         final PluginTask task = taskSource.loadTask(PluginTask.class);
         final Map<String, List<Base58Column>> base58ColumnMap = convertBase58ColumnListToMap(task.getColumns());
-        final Map<String, Column> outputColumnMap = convertColumnListToMap(outputSchema.getColumns());
+        final Map<String, Column> outputColumnMap = convertColumnListToMap(outputSchema.getColumns(), logger);
 
         return new PageOutput() {
             private PageReader reader = new PageReader(inputSchema);
@@ -117,62 +117,66 @@ public class Base58FilterPlugin implements FilterPlugin {
 
     void setValue(final Map<String, List<Base58Column>> base58ColumnMap, final Map<String, Column> outputColumnMap, final PageReader reader, final Schema outputSchema, final PageBuilder builder) {
 
-        // Do base58 conversions ahead of iterating output columns
-        final Map<String, String> base58OutputMap = new HashMap<>();
-        for (List<Base58Column> columnSet : base58ColumnMap.values()) {
-            for (Base58Column column : columnSet) {
+        // Build a map of output columns that should be mapped to encoded/decoded original columns
+        final Map<String, Base58Column> modifiedColumnMap = new HashMap<>(); // output column -> base58 column config
+        for (List<Base58Column> base58SourceColumns : base58ColumnMap.values()) {
+            for (Base58Column base58Column : base58SourceColumns) {
+                String outputColumnName = base58Column.getNewName().isPresent() ? base58Column.getNewName().get() : base58Column.getName();
+                modifiedColumnMap.put(outputColumnName, base58Column);
+            }
+        }
+
+        // Set values on all our output columns
+        List<Column> columns = outputSchema.getColumns();
+        for (Column outputColumn : columns) {
+
+            // Convert the value if configured to do so
+            if (modifiedColumnMap.containsKey(outputColumn.getName())) {
+                Base58Column base58Column = modifiedColumnMap.get(outputColumn.getName());
+                Column sourceColumn = outputColumnMap.get(base58Column.getName());
                 String inputValue, convertedValue = null;
 
-                // If the original column is not a string, then forget about it (it should be hex)
-                Column originalColumn = outputColumnMap.get(column.getName());
-                if (Types.STRING.equals(originalColumn.getType())) {
-                    inputValue = reader.getString(originalColumn);
-                } else {
-                    logger.error("cannot convert base58 value of non-string values. name: {}, type: {}, index: {}",
-                            originalColumn.getName(),
-                            originalColumn.getType(),
-                            originalColumn.getIndex());
-                    throw new DataException("Unexpected string type in column `" + originalColumn.getName() + "`. Got: " + originalColumn.getType());
+                // Don't bother setting it if the source is null
+                if (reader.isNull(sourceColumn)) {
+                    builder.setNull(outputColumn);
+                    continue;
                 }
 
-                // Convert the value
+                // Get the source value
+                if (Types.STRING.equals(sourceColumn.getType())) {
+                    inputValue = reader.getString(sourceColumn);
+                } else {
+                    logger.error("cannot convert base58 value of non-string values. name: {}, type: {}, index: {}",
+                            sourceColumn.getName(),
+                            sourceColumn.getType(),
+                            sourceColumn.getIndex());
+                    throw new DataException("Unexpected non-string type in column `" + sourceColumn.getName() + "`. Got: " + sourceColumn.getType());
+                }
+
+                // Convert the source value
                 try {
-                    convertedValue = convertValue(inputValue, column.getIsEncode().or(true), column.getPrefix().or(""));
+                    convertedValue = convertValue(inputValue, base58Column.getIsEncode().or(true), base58Column.getPrefix().or(""));
                 } catch (Exception e) {
                     // Failed to do the conversion. Probably misconfigured or malformed value
                     logger.error("failed to encode/decode base58 column value. name: {}, type: {}, index: {}, value: {}, method: {}, prefix: {}, target_name: {}",
-                            originalColumn.getName(),
-                            originalColumn.getType(),
-                            originalColumn.getIndex(),
+                            sourceColumn.getName(),
+                            sourceColumn.getType(),
+                            sourceColumn.getIndex(),
                             inputValue,
-                            column.getIsEncode().get() ? "encode" : "decode",
-                            column.getPrefix(),
-                            column.getNewName().or(column.getName()));
+                            base58Column.getIsEncode().get() ? "encode" : "decode",
+                            base58Column.getPrefix(),
+                            base58Column.getNewName().or(base58Column.getName()));
                     logger.error("base58 conversion exception", e);
                     // Don't crash the import if a single value is screwed up. Just log it for now
                 }
 
-                // Add it to the output mappings
-                if (column.getNewName().isPresent()) {
-                    base58OutputMap.put(column.getNewName().get(), convertedValue);
-                } else {
-                    base58OutputMap.put(column.getName(), convertedValue);
-                }
-            }
-        }
-
-        List<Column> columns = outputSchema.getColumns();
-        for (Column outputColumn : columns) {
-
-            // Did we convert the value for this column?
-            if (base58OutputMap.containsKey(outputColumn.getName())) {
-                String value = base58OutputMap.get(outputColumn.getName());
-                if (value == null) {
+                if (convertedValue == null) {
                     builder.setNull(outputColumn);
+                    continue;
                 } else {
-                    builder.setString(outputColumn, base58OutputMap.get(outputColumn.getName()));
+                    builder.setString(outputColumn, convertedValue);
+                    continue;
                 }
-                continue;
             }
 
             // No value?
@@ -199,6 +203,9 @@ public class Base58FilterPlugin implements FilterPlugin {
             }
             else if (Types.JSON.equals(outputColumn.getType())) {
                 builder.setJson(outputColumn, reader.getJson(outputColumn));
+            } else {
+                // NO VALUE? It shall be null.
+                builder.setNull(outputColumn);
             }
         }
     }
@@ -222,9 +229,12 @@ public class Base58FilterPlugin implements FilterPlugin {
         return result;
     }
 
-    static Map<String, Column> convertColumnListToMap(List<Column> columns) {
+    static Map<String, Column> convertColumnListToMap(List<Column> columns, Logger logger) {
         Map<String, Column> result = new HashMap<>();
         for (Column column : columns) {
+            if (result.containsKey(column.getName())) {
+                logger.warn("Output column ({}) already defined. Do you have duplicate column names in your source?", column.getName());
+            }
             result.put(column.getName(), column);
         }
         return result;
